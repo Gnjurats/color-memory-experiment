@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Color Memory Experiment
 
-## Getting Started
+Replication of **Experiment 1** from Kuhbandner et al. (2015) — *Differential binding of colors to objects in memory*.
 
-First, run the development server:
+A web-based psychology experiment where participants memorize colored words and are later tested on word recall and color recall.
+
+## Tech Stack
+
+- **Next.js 16** (App Router, TypeScript, Server Actions)
+- **Tailwind CSS** + **shadcn/ui**
+- **Drizzle ORM** + **Neon Postgres** (serverless)
+- **Framer Motion** for transitions
+- **Recharts** for admin statistics
+- **papaparse** (CSV) + **jspdf** (PDF) for data export
+
+## Setup
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/Gnjurats/color-memory-experiment.git
+cd color-memory-experiment
+npm install
+```
+
+### 2. Environment variables
+
+Create a `.env.local` file:
+
+```env
+DATABASE_URL=postgresql://...your-neon-connection-string...
+ADMIN_PASSWORD=your-admin-password
+```
+
+- **`DATABASE_URL`**: Your Neon Postgres connection string. On Vercel, attach a Neon database via the Vercel dashboard (Settings > Storage > Connect Database).
+- **`ADMIN_PASSWORD`**: Password for the `/admin` panel. Can be plain text or bcrypt-hashed.
+
+### 3. Database migration
+
+Push the schema to your database:
+
+```bash
+npm run db:push
+```
+
+Or use migrations:
+
+```bash
+npm run db:generate
+npm run db:migrate
+```
+
+### 4. Seed sequences
+
+Generate the 50 pre-built experiment sequences:
+
+```bash
+npm run seed
+```
+
+### 5. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deployment on Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Push to GitHub
+2. Import the repo on Vercel
+3. **Attach a Neon database** via Vercel dashboard (Settings > Storage). This auto-sets `DATABASE_URL`.
+4. Add `ADMIN_PASSWORD` to Vercel environment variables
+5. After first deploy, run the seed script locally with your production `DATABASE_URL`:
+   ```bash
+   DATABASE_URL=your-production-url npm run seed
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Experiment Flow
 
-## Learn More
+1. **Welcome** — consent + optional pseudo
+2. **Memorization** — 48 colored words shown twice (4s each, 0.5s ISI)
+3. **Distraction** — 4-minute math/trivia quiz
+4. **Test** — For each word: type completion (4.5s), select color, rate confidence (1-4)
+5. **Thank you**
 
-To learn more about Next.js, take a look at the following resources:
+## Admin Panel (`/admin`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Password-protected
+- View all participants and their trials
+- Toggle word correctness for manual review
+- Aggregate statistics with charts
+- Export data as CSV or PDF
