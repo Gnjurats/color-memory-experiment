@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import type { WordColorPair } from "@/db/schema";
 import { COLOR_HEX, type ExperimentColor } from "@/lib/stimuli";
@@ -15,15 +15,12 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 function reshuffleWithinBlocks(data: WordColorPair[]): WordColorPair[] {
-  // Group by blockIndex
   const blocks: Map<number, WordColorPair[]> = new Map();
   for (const item of data) {
     const existing = blocks.get(item.blockIndex) || [];
     existing.push(item);
     blocks.set(item.blockIndex, existing);
   }
-
-  // Shuffle block order and within each block
   const blockIndices = shuffleArray(Array.from(blocks.keys()));
   const result: WordColorPair[] = [];
   for (const idx of blockIndices) {
@@ -36,6 +33,12 @@ function reshuffleWithinBlocks(data: WordColorPair[]): WordColorPair[] {
 const WORD_DISPLAY_MS = 4000;
 const ISI_MS = 500;
 
+type DisplayState = {
+  item: WordColorPair | null;
+  phase: "word" | "isi" | "inter-pass" | "done";
+  globalIndex: number;
+};
+
 export function MemorizationPhase({
   sequenceData,
   onComplete,
@@ -43,76 +46,64 @@ export function MemorizationPhase({
   sequenceData: WordColorPair[];
   onComplete: () => void;
 }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showWord, setShowWord] = useState(true);
-  const [pass, setPass] = useState(1);
-  const [showPassMessage, setShowPassMessage] = useState(false);
-  const timerRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number>(0);
-
-  // Build presentation orders for both passes
   const [pass1Order] = useState(() => [...sequenceData]);
   const [pass2Order] = useState(() => reshuffleWithinBlocks(sequenceData));
-
-  const currentOrder = pass === 1 ? pass1Order : pass2Order;
-  const totalItems = 96; // 48 × 2
-  const globalIndex = pass === 1 ? currentIndex : 48 + currentIndex;
-
-  const advanceWord = useCallback(() => {
-    if (timerRef.current) cancelAnimationFrame(timerRef.current);
-
-    // Show ISI (blank)
-    setShowWord(false);
-
-    const isiStart = performance.now();
-    const waitISI = (now: number) => {
-      if (now - isiStart >= ISI_MS) {
-        const nextIndex = currentIndex + 1;
-        if (nextIndex >= 48) {
-          if (pass === 1) {
-            // Show "Deuxième passage..." message
-            setShowPassMessage(true);
-            setTimeout(() => {
-              setShowPassMessage(false);
-              setPass(2);
-              setCurrentIndex(0);
-              setShowWord(true);
-            }, 1500);
-            return;
-          } else {
-            onComplete();
-            return;
-          }
-        }
-        setCurrentIndex(nextIndex);
-        setShowWord(true);
-      } else {
-        timerRef.current = requestAnimationFrame(waitISI);
-      }
-    };
-    timerRef.current = requestAnimationFrame(waitISI);
-  }, [currentIndex, pass, onComplete]);
+  const [display, setDisplay] = useState<DisplayState>({
+    item: null,
+    phase: "word",
+    globalIndex: 0,
+  });
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    if (showPassMessage) return;
-    if (!showWord) return;
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    startTimeRef.current = performance.now();
-    const waitDisplay = (now: number) => {
-      if (now - startTimeRef.current >= WORD_DISPLAY_MS) {
-        advanceWord();
-      } else {
-        timerRef.current = requestAnimationFrame(waitDisplay);
-      }
+    const fullSequence = [...pass1Order, ...pass2Order];
+    let shownInterPass = false;
+
+    const schedule = (ms: number, fn: () => void) => {
+      timeoutId = setTimeout(() => {
+        if (!cancelled) fn();
+      }, ms);
     };
-    timerRef.current = requestAnimationFrame(waitDisplay);
+
+    const showWord = (index: number) => {
+      if (cancelled) return;
+
+      // Inter-pass overlay: show once when we reach index 48
+      if (index === 48 && !shownInterPass) {
+        shownInterPass = true;
+        setDisplay({ item: null, phase: "inter-pass", globalIndex: 48 });
+        schedule(1500, () => showWord(48));
+        return;
+      }
+
+      // All 96 done
+      if (index >= 96) {
+        onCompleteRef.current();
+        return;
+      }
+
+      // Display the word
+      setDisplay({ item: fullSequence[index], phase: "word", globalIndex: index });
+      schedule(WORD_DISPLAY_MS, () => {
+        // ISI blank
+        setDisplay({ item: null, phase: "isi", globalIndex: index });
+        schedule(ISI_MS, () => showWord(index + 1));
+      });
+    };
+
+    showWord(0);
 
     return () => {
-      if (timerRef.current) cancelAnimationFrame(timerRef.current);
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [currentIndex, pass, showWord, showPassMessage, advanceWord]);
+  }, [pass1Order, pass2Order]);
 
-  if (showPassMessage) {
+  if (display.phase === "inter-pass") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-2xl text-gray-600 font-medium">
@@ -122,26 +113,30 @@ export function MemorizationPhase({
     );
   }
 
-  const currentItem = currentOrder[currentIndex];
-  if (!currentItem) return null;
+  if (display.phase === "done") return null;
+
+  const totalItems = 96;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white relative">
-      {showWord ? (
+      {display.phase === "word" && display.item ? (
         <p
           className="text-5xl font-bold select-none"
-          style={{ color: COLOR_HEX[currentItem.color as ExperimentColor] }}
+          style={{ color: COLOR_HEX[display.item.color as ExperimentColor] }}
         >
-          {currentItem.word}
+          {display.item.word}
         </p>
       ) : (
         <div className="h-16" />
       )}
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-64 space-y-1">
-        <Progress value={(globalIndex / totalItems) * 100} className="h-2" />
+        <Progress
+          value={((display.globalIndex + 1) / totalItems) * 100}
+          className="h-2"
+        />
         <p className="text-xs text-gray-400 text-center">
-          {globalIndex + 1} / {totalItems}
+          {display.globalIndex + 1} / {totalItems}
         </p>
       </div>
     </div>
