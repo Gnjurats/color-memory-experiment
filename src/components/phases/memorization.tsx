@@ -120,14 +120,19 @@ export function MemorizationPhase({
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white relative">
       {display.phase === "word" && display.item ? (
-        <p
-          className="text-5xl font-bold select-none"
-          style={{ color: COLOR_HEX[display.item.color as ExperimentColor] }}
-        >
-          {display.item.word}
-        </p>
+        <>
+          <p className="text-2xl font-medium text-[#666] uppercase tracking-wide mb-6 select-none">
+            {display.item.category}
+          </p>
+          <p
+            className="text-6xl font-bold select-none"
+            style={{ color: COLOR_HEX[display.item.color as ExperimentColor] }}
+          >
+            {display.item.word}
+          </p>
+        </>
       ) : (
-        <div className="h-16" />
+        <div className="h-32" />
       )}
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-64 space-y-1">

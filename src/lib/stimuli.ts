@@ -76,10 +76,10 @@ export const COLORS = ["red", "yellow", "blue", "green"] as const;
 export type ExperimentColor = (typeof COLORS)[number];
 
 export const COLOR_HEX: Record<ExperimentColor, string> = {
-  red: "#D32F2F",
-  blue: "#1976D2",
-  yellow: "#FFD600",
-  green: "#2E7D32",
+  red: "#B7203A",
+  blue: "#0080BB",
+  yellow: "#D6B400",
+  green: "#0E8540",
 };
 
 export const COLOR_LABELS: Record<ExperimentColor, string> = {

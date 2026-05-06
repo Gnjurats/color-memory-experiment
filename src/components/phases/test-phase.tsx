@@ -8,7 +8,6 @@ import { submitTrial } from "@/lib/actions";
 import type { WordColorPair } from "@/db/schema";
 import {
   CATEGORIES,
-  COLOR_HEX,
   COLOR_LABELS,
   COLORS,
   type ExperimentColor,
@@ -206,12 +205,9 @@ export function TestPhase({
               <button
                 key={color}
                 onClick={() => handleColorSelect(color)}
-                className="w-28 h-28 rounded-xl border-2 border-gray-200 transition-all hover:scale-105 hover:shadow-lg active:scale-95 flex items-center justify-center"
-                style={{ backgroundColor: COLOR_HEX[color] }}
+                className="w-28 h-14 rounded-xl border-2 border-gray-200 bg-[#E5E5E5] text-[#333] font-bold text-base transition-all hover:scale-105 hover:shadow-lg active:scale-95 flex items-center justify-center"
               >
-                <span className="text-white font-bold text-sm drop-shadow-md">
-                  {COLOR_LABELS[color]}
-                </span>
+                {COLOR_LABELS[color]}
               </button>
             ))}
           </div>
