@@ -132,8 +132,8 @@ export function DistractionPhase({ onComplete }: { onComplete: () => void }) {
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
               Vous avez <strong>4 minutes</strong> pour répondre à un maximum de
-              questions. Ceci est une tâche de distraction avant la phase de
-              test.
+              questions. Concentrez-vous et essayez de répondre correctement au
+              plus grand nombre de questions possible.
             </p>
             <Button onClick={handleStart} className="w-full" size="lg">
               Commencer
@@ -149,7 +149,7 @@ export function DistractionPhase({ onComplete }: { onComplete: () => void }) {
       <Card className="w-full max-w-lg">
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle className="text-xl">Distraction</CardTitle>
+            <CardTitle className="text-xl">Culture générale</CardTitle>
             <div className="text-right">
               <p className="text-2xl font-mono font-bold">{timeStr}</p>
               <p className="text-xs text-muted-foreground">
