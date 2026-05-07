@@ -8,7 +8,7 @@ export function ThankYou() {
       <Card className="w-full max-w-lg text-center">
         <CardHeader>
           <CardTitle className="text-3xl">
-            Merci pour votre participation !
+            Merci d&apos;avoir contribué à cette étude
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -17,6 +17,8 @@ export function ExportButtons() {
         trials.map((t) => ({
           participant_id: t.participantId,
           pseudo: t.pseudo || "",
+          age_range: t.ageRange || "",
+          gender: t.gender || "",
           word: t.word,
           category: t.category,
           original_color: t.originalColor,
@@ -68,7 +70,9 @@ export function ExportButtons() {
         doc.setFontSize(16);
         doc.text(`Participant: ${pseudo}`, 14, 20);
         doc.setFontSize(10);
-        doc.text(`ID: ${pid}`, 14, 28);
+        const ageRange = pTrials[0]?.ageRange || "—";
+        const genderVal = pTrials[0]?.gender || "—";
+        doc.text(`ID: ${pid} | Âge: ${ageRange} | Genre: ${genderVal}`, 14, 28);
 
         const colorCorrect = pTrials.filter((t) => t.colorCorrect).length;
         const wordCorrect = pTrials.filter((t) => t.wordCorrect).length;

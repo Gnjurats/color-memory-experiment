@@ -81,6 +81,8 @@ export function AdminDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Pseudo</TableHead>
+                    <TableHead>Âge</TableHead>
+                    <TableHead>Genre</TableHead>
                     <TableHead>Début</TableHead>
                     <TableHead>Fin</TableHead>
                     <TableHead>Progression</TableHead>
@@ -91,6 +93,8 @@ export function AdminDashboard() {
                   {participants.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>{p.pseudo || "—"}</TableCell>
+                      <TableCell className="text-sm">{p.ageRange || "—"}</TableCell>
+                      <TableCell className="text-sm">{p.gender || "—"}</TableCell>
                       <TableCell className="text-sm">
                         {new Date(p.startedAt).toLocaleString("fr-FR")}
                       </TableCell>
@@ -119,7 +123,7 @@ export function AdminDashboard() {
                   ))}
                   {participants.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center text-muted-foreground">
                         Aucun participant pour le moment.
                       </TableCell>
                     </TableRow>

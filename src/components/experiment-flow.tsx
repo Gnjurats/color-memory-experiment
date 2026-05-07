@@ -45,8 +45,8 @@ export function ExperimentFlow() {
     }
   }, [phase]);
 
-  const handleStart = async (pseudo: string | null) => {
-    const result = await startExperiment(pseudo, navigator.userAgent);
+  const handleStart = async (pseudo: string | null, ageRange: string, gender: string) => {
+    const result = await startExperiment(pseudo, navigator.userAgent, ageRange, gender);
     setParticipantId(result.participantId);
     setSequenceData(result.sequenceData);
     setPhase("instructions-memorization");

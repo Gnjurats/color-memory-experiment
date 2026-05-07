@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getParticipantTrials, toggleWordCorrect } from "@/lib/actions";
+import { getParticipantTrials, getParticipants, toggleWordCorrect } from "@/lib/actions";
 import { COLOR_HEX, COLOR_LABELS, type ExperimentColor } from "@/lib/stimuli";
 import Link from "next/link";
 
@@ -37,11 +37,16 @@ export function ParticipantDetail({
   participantId: string;
 }) {
   const [trials, setTrials] = useState<Trial[]>([]);
+  const [participantInfo, setParticipantInfo] = useState<{ ageRange: string | null; gender: string | null } | null>(null);
   const [sortKey, setSortKey] = useState<keyof Trial>("testOrder");
   const [sortAsc, setSortAsc] = useState(true);
 
   useEffect(() => {
     getParticipantTrials(participantId).then(setTrials);
+    getParticipants().then((all) => {
+      const p = all.find((x) => x.id === participantId);
+      if (p) setParticipantInfo({ ageRange: p.ageRange, gender: p.gender });
+    });
   }, [participantId]);
 
   const handleToggle = async (trialId: string, currentValue: boolean) => {
@@ -84,6 +89,11 @@ export function ParticipantDetail({
               Détail du participant
             </h1>
             <p className="text-sm text-muted-foreground">{participantId}</p>
+            {participantInfo && (
+              <p className="text-sm text-muted-foreground">
+                Âge : {participantInfo.ageRange || "—"} · Genre : {participantInfo.gender || "—"}
+              </p>
+            )}
           </div>
           <Link href="/admin">
             <Button variant="outline">Retour</Button>

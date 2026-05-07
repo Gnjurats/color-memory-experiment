@@ -5,15 +5,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export function WelcomePhase({ onStart }: { onStart: (pseudo: string | null) => void }) {
+const AGE_RANGES = [
+  "18-24",
+  "25-34",
+  "35-44",
+  "45-54",
+  "55-64",
+  "65+",
+] as const;
+
+const GENDERS = [
+  { value: "female", label: "Femme" },
+  { value: "male", label: "Homme" },
+  { value: "other", label: "Autre" },
+  { value: "prefer_not_to_say", label: "Je préfère ne pas répondre" },
+] as const;
+
+export function WelcomePhase({
+  onStart,
+}: {
+  onStart: (pseudo: string | null, ageRange: string, gender: string) => void;
+}) {
   const [pseudo, setPseudo] = useState("");
+  const [ageRange, setAgeRange] = useState("");
+  const [gender, setGender] = useState("");
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const canSubmit = consent && ageRange !== "" && gender !== "" && !loading;
+
   const handleSubmit = async () => {
     setLoading(true);
-    await onStart(pseudo.trim() || null);
+    await onStart(pseudo.trim() || null, ageRange, gender);
   };
 
   return (
@@ -45,6 +76,38 @@ export function WelcomePhase({ onStart }: { onStart: (pseudo: string | null) => 
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="age-range">Tranche d&apos;âge *</Label>
+            <Select value={ageRange} onValueChange={(v) => setAgeRange(v ?? "")}>
+              <SelectTrigger id="age-range">
+                <SelectValue placeholder="Sélectionnez votre tranche d'âge" />
+              </SelectTrigger>
+              <SelectContent>
+                {AGE_RANGES.map((range) => (
+                  <SelectItem key={range} value={range}>
+                    {range} ans
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="gender">Genre *</Label>
+            <Select value={gender} onValueChange={(v) => setGender(v ?? "")}>
+              <SelectTrigger id="gender">
+                <SelectValue placeholder="Sélectionnez votre genre" />
+              </SelectTrigger>
+              <SelectContent>
+                {GENDERS.map((g) => (
+                  <SelectItem key={g.value} value={g.value}>
+                    {g.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex items-start gap-3">
             <input
               type="checkbox"
@@ -62,7 +125,7 @@ export function WelcomePhase({ onStart }: { onStart: (pseudo: string | null) => 
 
           <Button
             onClick={handleSubmit}
-            disabled={!consent || loading}
+            disabled={!canSubmit}
             className="w-full"
             size="lg"
           >

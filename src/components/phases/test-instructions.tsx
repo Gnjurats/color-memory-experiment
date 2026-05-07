@@ -18,7 +18,7 @@ export function TestInstructions({ onContinue }: { onContinue: () => void }) {
             </p>
             <p>
               Vous aurez <strong>4,5 secondes</strong> pour écrire le mot
-              complet.
+              dans son entièreté (première lettre comprise).
             </p>
             <p>
               Ensuite, sans limite de temps, vous indiquerez la{" "}
