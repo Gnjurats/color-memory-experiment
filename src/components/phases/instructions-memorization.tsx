@@ -17,8 +17,8 @@ export function InstructionsMemorization({
         <CardContent className="space-y-6">
           <div className="space-y-4 text-sm leading-relaxed">
             <p>
-              Vous allez voir <strong>48 mots</strong>, un par un, dans
-              différentes couleurs. Chaque mot apparaîtra pendant{" "}
+              Vous allez voir une série de mots, un par un, dans différentes
+              couleurs. Chaque mot apparaîtra pendant{" "}
               <strong>4 secondes</strong>.
             </p>
             <p>
@@ -27,12 +27,11 @@ export function InstructionsMemorization({
               deux.
             </p>
             <p>
-              Les mots seront présentés en <strong>deux passages</strong>. Après
-              le premier passage de 48 mots, les mêmes mots seront présentés une
-              seconde fois dans un ordre différent.
+              La liste vous sera présentée <strong>deux fois de suite</strong>{" "}
+              pour faciliter la mémorisation.
             </p>
             <p className="text-muted-foreground italic">
-              Installez-vous confortablement et concentrez-vous bien.
+              Installez-vous confortablement et concentrez-vous.
             </p>
           </div>
 

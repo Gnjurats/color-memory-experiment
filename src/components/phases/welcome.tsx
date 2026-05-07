@@ -24,16 +24,15 @@ export function WelcomePhase({ onStart }: { onStart: (pseudo: string | null) => 
             Expérience de Mémoire des Couleurs
           </CardTitle>
           <p className="text-muted-foreground text-sm">
-            Réplication de Kuhbandner et al. (2015) — Liaison différentielle des
-            couleurs aux objets en mémoire
+            Étude sur la mémoire visuelle
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Cette expérience étudie comment nous mémorisons les couleurs associées
-            aux objets. Vous verrez des mots colorés à mémoriser, puis vous serez
-            testé(e) sur votre rappel des mots et de leurs couleurs. La durée
-            totale est d&apos;environ 20 minutes.
+            Cette étude porte sur la mémoire visuelle. Vous allez voir une série
+            de mots à mémoriser, puis vous serez testé(e) sur ce que vous avez
+            retenu. La durée totale est d&apos;environ 15 minutes. Toutes vos
+            réponses sont anonymes.
           </p>
 
           <div className="space-y-2">

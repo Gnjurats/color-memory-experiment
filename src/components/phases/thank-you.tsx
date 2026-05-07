@@ -13,8 +13,8 @@ export function ThankYou() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            Vos réponses ont été enregistrées avec succès. Vous pouvez maintenant
-            fermer cette page.
+            Vos réponses ont bien été enregistrées. Merci de contribuer à cette
+            étude — vous pouvez maintenant fermer cette page.
           </p>
           <div className="text-6xl">🧠</div>
         </CardContent>

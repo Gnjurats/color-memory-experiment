@@ -9,6 +9,7 @@ import { InstructionsMemorization } from "./phases/instructions-memorization";
 import { MemorizationPhase } from "./phases/memorization";
 import { DistractionPhase } from "./phases/distraction";
 import { TestInstructions } from "./phases/test-instructions";
+import { TestTutorial } from "./phases/test-tutorial";
 import { TestPhase } from "./phases/test-phase";
 import { ThankYou } from "./phases/thank-you";
 
@@ -18,6 +19,7 @@ type Phase =
   | "memorization"
   | "distraction"
   | "test-instructions"
+  | "test-tutorial"
   | "test"
   | "thank-you";
 
@@ -83,7 +85,10 @@ export function ExperimentFlow() {
             <DistractionPhase onComplete={() => setPhase("test-instructions")} />
           )}
           {phase === "test-instructions" && (
-            <TestInstructions onContinue={() => setPhase("test")} />
+            <TestInstructions onContinue={() => setPhase("test-tutorial")} />
+          )}
+          {phase === "test-tutorial" && (
+            <TestTutorial onComplete={() => setPhase("test")} />
           )}
           {phase === "test" && sequenceData && participantId && (
             <TestPhase

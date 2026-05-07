@@ -126,14 +126,13 @@ export function DistractionPhase({ onComplete }: { onComplete: () => void }) {
         <Card className="w-full max-w-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
-              Test de culture générale et de mathématiques
+              Questions diverses
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Vous avez <strong>4 minutes</strong> pour répondre à un maximum de
-              questions. Concentrez-vous et essayez de répondre correctement au
-              plus grand nombre de questions possible.
+              Vous avez <strong>4 minutes</strong> pour répondre au maximum de
+              questions. Faites de votre mieux.
             </p>
             <Button onClick={handleStart} className="w-full" size="lg">
               Commencer
@@ -149,7 +148,7 @@ export function DistractionPhase({ onComplete }: { onComplete: () => void }) {
       <Card className="w-full max-w-lg">
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle className="text-xl">Culture générale</CardTitle>
+            <CardTitle className="text-xl">Questions</CardTitle>
             <div className="text-right">
               <p className="text-2xl font-mono font-bold">{timeStr}</p>
               <p className="text-xs text-muted-foreground">

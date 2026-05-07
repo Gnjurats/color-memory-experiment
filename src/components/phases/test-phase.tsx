@@ -144,7 +144,6 @@ export function TestPhase({
   if (!currentItem) return null;
 
   const firstLetter = currentItem.word.charAt(0);
-  const underscores = "_".repeat(Math.max(1, currentItem.word.length - 1));
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
@@ -163,9 +162,8 @@ export function TestPhase({
 
       {step === "word-completion" && (
         <div className="flex flex-col items-center space-y-6 w-full max-w-md">
-          <p className="text-5xl font-bold text-gray-400 tracking-wider select-none">
+          <p className="text-5xl font-bold text-[#888] select-none">
             {firstLetter}
-            <span className="text-gray-300">{underscores}</span>
           </p>
 
           <Input

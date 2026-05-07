@@ -107,7 +107,7 @@ export function MemorizationPhase({
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-2xl text-gray-600 font-medium">
-          Deuxième passage...
+          Deuxième passage
         </p>
       </div>
     );
