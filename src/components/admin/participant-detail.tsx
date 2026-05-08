@@ -37,7 +37,7 @@ export function ParticipantDetail({
   participantId: string;
 }) {
   const [trials, setTrials] = useState<Trial[]>([]);
-  const [participantInfo, setParticipantInfo] = useState<{ ageRange: string | null; gender: string | null } | null>(null);
+  const [participantInfo, setParticipantInfo] = useState<{ age: number | null; gender: string | null } | null>(null);
   const [sortKey, setSortKey] = useState<keyof Trial>("testOrder");
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -45,7 +45,7 @@ export function ParticipantDetail({
     getParticipantTrials(participantId).then(setTrials);
     getParticipants().then((all) => {
       const p = all.find((x) => x.id === participantId);
-      if (p) setParticipantInfo({ ageRange: p.ageRange, gender: p.gender });
+      if (p) setParticipantInfo({ age: p.age, gender: p.gender });
     });
   }, [participantId]);
 
@@ -91,7 +91,7 @@ export function ParticipantDetail({
             <p className="text-sm text-muted-foreground">{participantId}</p>
             {participantInfo && (
               <p className="text-sm text-muted-foreground">
-                Âge : {participantInfo.ageRange || "—"} · Genre : {participantInfo.gender || "—"}
+                Âge : {participantInfo.age ?? "—"} · Genre : {participantInfo.gender || "—"}
               </p>
             )}
           </div>

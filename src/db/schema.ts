@@ -31,7 +31,7 @@ export const participants = pgTable("participants", {
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
   userAgent: text("user_agent"),
-  ageRange: text("age_range"),
+  age: integer("age"),
   gender: text("gender"),
 });
 

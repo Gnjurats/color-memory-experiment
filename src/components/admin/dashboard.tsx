@@ -93,7 +93,7 @@ export function AdminDashboard() {
                   {participants.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>{p.pseudo || "—"}</TableCell>
-                      <TableCell className="text-sm">{p.ageRange || "—"}</TableCell>
+                      <TableCell className="text-sm">{p.age ?? "—"}</TableCell>
                       <TableCell className="text-sm">{p.gender || "—"}</TableCell>
                       <TableCell className="text-sm">
                         {new Date(p.startedAt).toLocaleString("fr-FR")}

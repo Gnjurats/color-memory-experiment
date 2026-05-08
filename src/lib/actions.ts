@@ -5,7 +5,7 @@ import { participants, sequences, trials } from "@/db/schema";
 import { eq, sql, count } from "drizzle-orm";
 import { checkWordCorrect } from "./stimuli";
 
-export async function startExperiment(pseudo: string | null, userAgent: string, ageRange: string, gender: string) {
+export async function startExperiment(pseudo: string | null, userAgent: string, age: number, gender: string) {
   // Pick a random sequence
   const allSequences = await db.select({ id: sequences.id }).from(sequences);
   if (allSequences.length === 0) {
@@ -19,7 +19,7 @@ export async function startExperiment(pseudo: string | null, userAgent: string, 
       pseudo: pseudo || null,
       sequenceId: randomSeq.id,
       userAgent,
-      ageRange,
+      age,
       gender,
     })
     .returning();
@@ -76,7 +76,7 @@ export async function getParticipants() {
     .select({
       id: participants.id,
       pseudo: participants.pseudo,
-      ageRange: participants.ageRange,
+      age: participants.age,
       gender: participants.gender,
       startedAt: participants.startedAt,
       completedAt: participants.completedAt,
@@ -113,7 +113,7 @@ export async function getAllTrials() {
       trialId: trials.id,
       participantId: trials.participantId,
       pseudo: participants.pseudo,
-      ageRange: participants.ageRange,
+      age: participants.age,
       gender: participants.gender,
       word: trials.word,
       category: trials.category,

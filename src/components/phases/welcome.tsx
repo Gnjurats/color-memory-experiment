@@ -13,38 +13,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const AGE_RANGES = [
-  "18-24",
-  "25-34",
-  "35-44",
-  "45-54",
-  "55-64",
-  "65+",
-] as const;
-
 const GENDERS = [
-  { value: "female", label: "Femme" },
   { value: "male", label: "Homme" },
-  { value: "other", label: "Autre" },
-  { value: "prefer_not_to_say", label: "Je préfère ne pas répondre" },
+  { value: "female", label: "Femme" },
 ] as const;
 
 export function WelcomePhase({
   onStart,
 }: {
-  onStart: (pseudo: string | null, ageRange: string, gender: string) => void;
+  onStart: (pseudo: string | null, age: number, gender: string) => void;
 }) {
   const [pseudo, setPseudo] = useState("");
-  const [ageRange, setAgeRange] = useState("");
+  const [ageInput, setAgeInput] = useState("");
   const [gender, setGender] = useState("");
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = consent && ageRange !== "" && gender !== "" && !loading;
+  const ageNum = parseInt(ageInput, 10);
+  const ageValid = !isNaN(ageNum) && ageNum >= 1 && ageNum <= 120 && String(ageNum) === ageInput.trim();
+  const canSubmit = consent && ageValid && gender !== "" && !loading;
 
   const handleSubmit = async () => {
     setLoading(true);
-    await onStart(pseudo.trim() || null, ageRange, gender);
+    await onStart(pseudo.trim() || null, ageNum, gender);
   };
 
   return (
@@ -77,19 +68,16 @@ export function WelcomePhase({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="age-range">Tranche d&apos;âge *</Label>
-            <Select value={ageRange} onValueChange={(v) => setAgeRange(v ?? "")}>
-              <SelectTrigger id="age-range">
-                <SelectValue placeholder="Sélectionnez votre tranche d'âge" />
-              </SelectTrigger>
-              <SelectContent>
-                {AGE_RANGES.map((range) => (
-                  <SelectItem key={range} value={range}>
-                    {range} ans
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="age">Âge *</Label>
+            <Input
+              id="age"
+              type="number"
+              min={1}
+              max={120}
+              value={ageInput}
+              onChange={(e) => setAgeInput(e.target.value)}
+              placeholder="Votre âge"
+            />
           </div>
 
           <div className="space-y-2">
