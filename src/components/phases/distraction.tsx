@@ -131,8 +131,9 @@ export function DistractionPhase({ onComplete }: { onComplete: () => void }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Vous avez <strong>4 minutes</strong> pour répondre au maximum de
-              questions. Faites de votre mieux.
+              Vous avez <strong>4 minutes</strong> pour répondre à un maximum de
+              questions de culture générale et de calculs mathématiques. Faites
+              de votre mieux.
             </p>
             <Button onClick={handleStart} className="w-full" size="lg">
               Commencer

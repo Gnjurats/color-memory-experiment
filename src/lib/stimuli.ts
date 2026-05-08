@@ -28,7 +28,7 @@ export const WORDS_BY_CATEGORY: Record<Category, string[]> = {
     "Hélicoptère",
     "Camion",
     "Train",
-    "Scooteur",
+    "Scooter",
   ],
   Vêtements: [
     "Anorak",

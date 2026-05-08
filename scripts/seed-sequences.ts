@@ -114,6 +114,10 @@ function generateSequence(): WordColorPair[] {
 }
 
 async function seed() {
+  console.log("Clearing existing data...");
+  await db.delete(schema.trials);
+  await db.delete(schema.participants);
+  await db.delete(schema.sequences);
   console.log("Generating 50 sequences...");
 
   const sequenceRows = [];

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { WordColorPair } from "@/db/schema";
 import { COLOR_HEX, type ExperimentColor } from "@/lib/stimuli";
@@ -53,15 +55,18 @@ export function MemorizationPhase({
     phase: "word",
     globalIndex: 0,
   });
+  const [passRunning, setPassRunning] = useState<1 | 2>(1);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  useEffect(() => {
+  // Run a pass of 48 words, then call onPassDone
+  const runPass = (
+    words: WordColorPair[],
+    globalOffset: number,
+    onPassDone: () => void
+  ) => {
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    const fullSequence = [...pass1Order, ...pass2Order];
-    let shownInterPass = false;
 
     const schedule = (ms: number, fn: () => void) => {
       timeoutId = setTimeout(() => {
@@ -72,25 +77,22 @@ export function MemorizationPhase({
     const showWord = (index: number) => {
       if (cancelled) return;
 
-      // Inter-pass overlay: show once when we reach index 48
-      if (index === 48 && !shownInterPass) {
-        shownInterPass = true;
-        setDisplay({ item: null, phase: "inter-pass", globalIndex: 48 });
-        schedule(1500, () => showWord(48));
+      if (index >= words.length) {
+        onPassDone();
         return;
       }
 
-      // All 96 done
-      if (index >= 96) {
-        onCompleteRef.current();
-        return;
-      }
-
-      // Display the word
-      setDisplay({ item: fullSequence[index], phase: "word", globalIndex: index });
+      setDisplay({
+        item: words[index],
+        phase: "word",
+        globalIndex: globalOffset + index,
+      });
       schedule(WORD_DISPLAY_MS, () => {
-        // ISI blank
-        setDisplay({ item: null, phase: "isi", globalIndex: index });
+        setDisplay({
+          item: null,
+          phase: "isi",
+          globalIndex: globalOffset + index,
+        });
         schedule(ISI_MS, () => showWord(index + 1));
       });
     };
@@ -101,14 +103,50 @@ export function MemorizationPhase({
       cancelled = true;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [pass1Order, pass2Order]);
+  };
+
+  // Pass 1
+  useEffect(() => {
+    if (passRunning !== 1) return;
+    return runPass(pass1Order, 0, () => {
+      setDisplay({ item: null, phase: "inter-pass", globalIndex: 48 });
+    });
+  }, [pass1Order, passRunning]);
+
+  // Pass 2
+  useEffect(() => {
+    if (passRunning !== 2) return;
+    return runPass(pass2Order, 48, () => {
+      onCompleteRef.current();
+    });
+  }, [pass2Order, passRunning]);
+
+  const handleContinuePass2 = () => {
+    setPassRunning(2);
+  };
 
   if (display.phase === "inter-pass") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="text-2xl text-gray-600 font-medium">
-          Deuxième passage
-        </p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 p-4">
+        <Card className="w-full max-w-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Deuxième passage</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Vous allez maintenant revoir les mêmes mots, dans un ordre
+              différent. Prenez quelques secondes pour vous préparer, puis
+              cliquez sur Continuer lorsque vous êtes prêt(e).
+            </p>
+            <Button
+              onClick={handleContinuePass2}
+              className="w-full"
+              size="lg"
+            >
+              Continuer
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
