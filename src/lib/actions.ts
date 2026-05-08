@@ -49,18 +49,27 @@ export async function submitTrial(data: {
   const wordCorrect = checkWordCorrect(data.typedAnswer, data.word);
   const colorCorrect = data.selectedColor === data.originalColor;
 
-  await db.insert(trials).values({
-    participantId: data.participantId,
-    word: data.word,
-    category: data.category,
-    originalColor: data.originalColor,
-    typedAnswer: data.typedAnswer,
-    wordCorrect,
-    selectedColor: data.selectedColor,
-    colorCorrect,
-    confidence: data.confidence,
-    testOrder: data.testOrder,
-  });
+  try {
+    await db.insert(trials).values({
+      participantId: data.participantId,
+      word: data.word,
+      category: data.category,
+      originalColor: data.originalColor,
+      typedAnswer: data.typedAnswer,
+      wordCorrect,
+      selectedColor: data.selectedColor,
+      colorCorrect,
+      confidence: data.confidence,
+      testOrder: data.testOrder,
+    });
+  } catch (err: unknown) {
+    // Unique constraint violation (23505) — trial already saved, silently succeed
+    if (err instanceof Error && "code" in err && (err as { code: string }).code === "23505") {
+      console.log(`Duplicate trial ignored: participant=${data.participantId} testOrder=${data.testOrder}`);
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function completeExperiment(participantId: string) {

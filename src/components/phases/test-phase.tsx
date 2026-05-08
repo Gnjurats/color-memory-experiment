@@ -60,6 +60,7 @@ export function TestPhase({
   const [colorButtonOrder, setColorButtonOrder] = useState<ExperimentColor[]>(() =>
     shuffleArray([...COLORS])
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -112,28 +113,34 @@ export function TestPhase({
   };
 
   const handleConfidence = async (confidence: number) => {
-    await submitTrial({
-      participantId,
-      word: currentItem.word,
-      category: currentItem.category,
-      originalColor: currentItem.color,
-      typedAnswer: capturedAnswer,
-      selectedColor: selectedColor!,
-      confidence,
-      testOrder: currentIndex,
-    });
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await submitTrial({
+        participantId,
+        word: currentItem.word,
+        category: currentItem.category,
+        originalColor: currentItem.color,
+        typedAnswer: capturedAnswer,
+        selectedColor: selectedColor!,
+        confidence,
+        testOrder: currentIndex,
+      });
 
-    if (currentIndex + 1 >= testOrder.length) {
-      onComplete();
-      return;
+      if (currentIndex + 1 >= testOrder.length) {
+        onComplete();
+        return;
+      }
+
+      setCurrentIndex((i) => i + 1);
+      setStep("letter-display");
+      setTypedAnswer("");
+      setCapturedAnswer("");
+      setSelectedColor(null);
+      setTimeLeft(LETTER_DISPLAY_MS);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setCurrentIndex((i) => i + 1);
-    setStep("letter-display");
-    setTypedAnswer("");
-    setCapturedAnswer("");
-    setSelectedColor(null);
-    setTimeLeft(LETTER_DISPLAY_MS);
   };
 
   if (!currentItem) return null;
@@ -223,6 +230,7 @@ export function TestPhase({
                 key={level}
                 variant="outline"
                 className="w-16 h-16 text-xl font-bold"
+                disabled={isSubmitting}
                 onClick={() => handleConfidence(level)}
               >
                 {level}

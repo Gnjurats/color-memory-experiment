@@ -6,6 +6,7 @@ import {
   timestamp,
   boolean,
   integer,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export type WordColorPair = {
@@ -50,4 +51,6 @@ export const trials = pgTable("trials", {
   confidence: integer("confidence").notNull(),
   testOrder: integer("test_order").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  unique("trials_participant_testorder_unique").on(table.participantId, table.testOrder),
+]);
