@@ -57,15 +57,18 @@ export function TestTutorial({ onComplete }: { onComplete: () => void }) {
           Catégorie : Animaux
         </p>
         <p className="text-5xl font-bold text-[#888] select-none mb-6">É</p>
-        <Input
-          value="Éléphant"
-          readOnly
-          className="text-center text-lg max-w-md mb-4"
-        />
-        <p className="text-sm text-gray-500 max-w-md text-center mb-8">
-          Lorsque vous verrez la première lettre du mot et sa catégorie, vous
-          aurez <strong>4,5 secondes</strong> pour taper le mot complet.
-        </p>
+        <div className="text-sm text-gray-500 max-w-md text-center mb-8 space-y-3">
+          <p>
+            <strong>Phase 1 (4,5s)</strong> : la première lettre apparaît seule,
+            sans champ de saisie. Vous mémorisez la lettre et essayez de
+            retrouver le mot.
+          </p>
+          <p>
+            <strong>Phase 2 (temps illimité)</strong> : la lettre disparaît, un
+            champ vide apparaît. Vous tapez le mot complet de mémoire et appuyez
+            sur Entrée.
+          </p>
+        </div>
         <Button onClick={() => setStep("color")} size="lg">
           Continuer
         </Button>

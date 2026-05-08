@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -22,9 +22,9 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-type TestStep = "word-completion" | "color-selection" | "confidence";
+type TestStep = "letter-display" | "word-entry" | "color-selection" | "confidence";
 
-const TYPING_TIME_MS = 4500;
+const LETTER_DISPLAY_MS = 4500;
 
 export function TestPhase({
   sequenceData,
@@ -35,17 +35,13 @@ export function TestPhase({
   participantId: string;
   onComplete: () => void;
 }) {
-  // Build test order: blocked by category, random category order, random word order within category
   const testOrder = useMemo(() => {
     const categoryOrder = shuffleArray([...CATEGORIES]);
     const items: WordColorPair[] = [];
-
-    // Deduplicate: sequenceData has 48 items, each word appears once
     const uniqueWords = new Map<string, WordColorPair>();
     for (const item of sequenceData) {
       uniqueWords.set(item.word, item);
     }
-
     for (const category of categoryOrder) {
       const catWords = shuffleArray(
         Array.from(uniqueWords.values()).filter((w) => w.category === category)
@@ -56,58 +52,59 @@ export function TestPhase({
   }, [sequenceData]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [step, setStep] = useState<TestStep>("word-completion");
+  const [step, setStep] = useState<TestStep>("letter-display");
   const [typedAnswer, setTypedAnswer] = useState("");
   const [capturedAnswer, setCapturedAnswer] = useState("");
   const [selectedColor, setSelectedColor] = useState<ExperimentColor | null>(null);
-  const [timeLeft, setTimeLeft] = useState(TYPING_TIME_MS);
+  const [timeLeft, setTimeLeft] = useState(LETTER_DISPLAY_MS);
   const [colorButtonOrder, setColorButtonOrder] = useState<ExperimentColor[]>(() =>
     shuffleArray([...COLORS])
   );
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const typedAnswerRef = useRef("");
-  const timerStartRef = useRef<number>(0);
-  const animFrameRef = useRef<number>(0);
-  const capturedRef = useRef(false);
 
   const currentItem = testOrder[currentIndex];
 
-  // Sync ref with state for the typing input
+  // Timer for letter display (sub-phase A1)
   useEffect(() => {
-    typedAnswerRef.current = typedAnswer;
-  }, [typedAnswer]);
+    if (step !== "letter-display") return;
 
-  // Timer for word completion
-  useEffect(() => {
-    if (step !== "word-completion") return;
-
-    capturedRef.current = false;
-    timerStartRef.current = performance.now();
+    let cancelled = false;
+    const start = performance.now();
 
     const tick = (now: number) => {
-      const elapsed = now - timerStartRef.current;
-      const remaining = Math.max(0, TYPING_TIME_MS - elapsed);
+      if (cancelled) return;
+      const elapsed = now - start;
+      const remaining = Math.max(0, LETTER_DISPLAY_MS - elapsed);
       setTimeLeft(remaining);
 
-      if (remaining <= 0 && !capturedRef.current) {
-        capturedRef.current = true;
-        // Capture whatever is in the input at this moment
-        const answer = typedAnswerRef.current;
-        setCapturedAnswer(answer);
-        setStep("color-selection");
-        setColorButtonOrder(shuffleArray([...COLORS]));
+      if (remaining <= 0) {
+        setStep("word-entry");
         return;
       }
-      animFrameRef.current = requestAnimationFrame(tick);
+      requestAnimationFrame(tick);
     };
-    animFrameRef.current = requestAnimationFrame(tick);
+    const frameId = requestAnimationFrame(tick);
 
-    // Focus input
-    setTimeout(() => inputRef.current?.focus(), 50);
-
-    return () => cancelAnimationFrame(animFrameRef.current);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+    };
   }, [step, currentIndex]);
+
+  // Autofocus input when entering word-entry step
+  useEffect(() => {
+    if (step === "word-entry") {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [step]);
+
+  const handleWordSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setCapturedAnswer(typedAnswer);
+    setStep("color-selection");
+    setColorButtonOrder(shuffleArray([...COLORS]));
+  };
 
   const handleColorSelect = (color: ExperimentColor) => {
     setSelectedColor(color);
@@ -115,7 +112,6 @@ export function TestPhase({
   };
 
   const handleConfidence = async (confidence: number) => {
-    // Submit trial
     await submitTrial({
       participantId,
       word: currentItem.word,
@@ -127,18 +123,17 @@ export function TestPhase({
       testOrder: currentIndex,
     });
 
-    // Move to next word or complete
     if (currentIndex + 1 >= testOrder.length) {
       onComplete();
       return;
     }
 
     setCurrentIndex((i) => i + 1);
-    setStep("word-completion");
+    setStep("letter-display");
     setTypedAnswer("");
     setCapturedAnswer("");
     setSelectedColor(null);
-    setTimeLeft(TYPING_TIME_MS);
+    setTimeLeft(LETTER_DISPLAY_MS);
   };
 
   if (!currentItem) return null;
@@ -155,17 +150,26 @@ export function TestPhase({
         </p>
       </div>
 
-      {/* Category label */}
-      <p className="text-sm text-gray-500 mb-2 font-medium">
-        Catégorie : {currentItem.category}
-      </p>
-
-      {step === "word-completion" && (
-        <div className="flex flex-col items-center space-y-6 w-full max-w-md">
+      {step === "letter-display" && (
+        <div className="flex flex-col items-center space-y-6">
+          <p className="text-sm text-gray-500 mb-2 font-medium">
+            Catégorie : {currentItem.category}
+          </p>
           <p className="text-5xl font-bold text-[#888] select-none">
             {firstLetter}
           </p>
+          <p className="text-xs text-gray-400">
+            {(timeLeft / 1000).toFixed(1)}s
+          </p>
+        </div>
+      )}
 
+      {step === "word-entry" && (
+        <form
+          onSubmit={handleWordSubmit}
+          className="flex flex-col items-center space-y-6 w-full max-w-md"
+        >
+          <p className="text-sm text-gray-500">Écrivez le mot</p>
           <Input
             ref={inputRef}
             value={typedAnswer}
@@ -177,17 +181,10 @@ export function TestPhase({
             autoCapitalize="off"
             spellCheck={false}
           />
-
-          <div className="w-32">
-            <Progress
-              value={(timeLeft / TYPING_TIME_MS) * 100}
-              className="h-2"
-            />
-            <p className="text-xs text-gray-400 text-center mt-1">
-              {(timeLeft / 1000).toFixed(1)}s
-            </p>
-          </div>
-        </div>
+          <Button type="submit" size="lg">
+            Valider
+          </Button>
+        </form>
       )}
 
       {step === "color-selection" && (

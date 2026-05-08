@@ -17,8 +17,9 @@ export function TestInstructions({ onContinue }: { onContinue: () => void }) {
               <strong>première lettre</strong> et sa <strong>catégorie</strong>.
             </p>
             <p>
-              Vous aurez <strong>4,5 secondes</strong> pour écrire le mot
-              dans son entièreté (première lettre comprise).
+              La première lettre du mot vous sera montrée pendant{" "}
+              <strong>4,5 secondes</strong>. Ensuite, vous aurez un temps
+              illimité pour taper le mot complet de mémoire.
             </p>
             <p>
               Ensuite, sans limite de temps, vous indiquerez la{" "}
