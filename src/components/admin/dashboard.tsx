@@ -22,7 +22,7 @@ import Link from "next/link";
 
 type Participant = Awaited<ReturnType<typeof getParticipants>>[number];
 type Stats = Awaited<ReturnType<typeof getAggregateStats>>;
-type Tab = "participants" | "complete" | "stats";
+type Tab = "participants" | "complete" | "young" | "stats";
 
 function ParticipantsTable({ participants, emptyMessage }: { participants: Participant[]; emptyMessage: string }) {
   return (
@@ -96,6 +96,9 @@ export function AdminDashboard() {
   }, []);
 
   const completeParticipants = participants.filter((p) => completeIds.has(p.id));
+  const youngCompleteParticipants = completeParticipants.filter(
+    (p) => p.age != null && p.age <= 30
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -131,6 +134,12 @@ export function AdminDashboard() {
             Participants complets ({completeParticipants.length})
           </Button>
           <Button
+            variant={tab === "young" ? "default" : "outline"}
+            onClick={() => setTab("young")}
+          >
+            ≤ 30 ans (complets) ({youngCompleteParticipants.length})
+          </Button>
+          <Button
             variant={tab === "stats" ? "default" : "outline"}
             onClick={() => setTab("stats")}
           >
@@ -161,13 +170,32 @@ export function AdminDashboard() {
                 <CardTitle>
                   {completeParticipants.length} participant{completeParticipants.length !== 1 ? "s" : ""} complet{completeParticipants.length !== 1 ? "s" : ""}
                 </CardTitle>
-                <ExportButtons completeOnly />
+                <ExportButtons filterMode="complete" />
               </div>
             </CardHeader>
             <CardContent>
               <ParticipantsTable
                 participants={completeParticipants}
                 emptyMessage="Aucun participant complet pour le moment."
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {tab === "young" && (
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>
+                  {youngCompleteParticipants.length} participant{youngCompleteParticipants.length !== 1 ? "s" : ""} (complet{youngCompleteParticipants.length !== 1 ? "s" : ""}, ≤ 30 ans)
+                </CardTitle>
+                <ExportButtons filterMode="young" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ParticipantsTable
+                participants={youngCompleteParticipants}
+                emptyMessage="Aucun participant complet de 30 ans ou moins."
               />
             </CardContent>
           </Card>

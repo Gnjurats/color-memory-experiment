@@ -164,6 +164,26 @@ export async function getCompleteTrials() {
   return allTrials.filter((t) => completeIds.has(t.participantId));
 }
 
+export async function getYoungCompleteTrials() {
+  const completeIds = await getCompleteParticipantIds();
+  if (completeIds.size === 0) return [];
+
+  const allTrials = await getAllTrials();
+  return allTrials.filter(
+    (t) => completeIds.has(t.participantId) && t.age != null && t.age <= 30
+  );
+}
+
+export async function getYoungCompleteTrialsWithTimestamps() {
+  const completeIds = await getCompleteParticipantIds();
+  if (completeIds.size === 0) return [];
+
+  const all = await getTrialsWithTimestamps();
+  return all.filter(
+    (t) => completeIds.has(t.participantId) && t.age != null && t.age <= 30
+  );
+}
+
 export async function getTrialsWithTimestamps() {
   const result = await db
     .select({

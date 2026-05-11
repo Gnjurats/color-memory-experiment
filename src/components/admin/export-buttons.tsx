@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import {
   getAllTrials,
   getCompleteTrials,
+  getYoungCompleteTrials,
   getTrialsWithTimestamps,
   getCompleteTrialsWithTimestamps,
+  getYoungCompleteTrialsWithTimestamps,
 } from "@/lib/actions";
+
+type FilterMode = "all" | "complete" | "young";
 
 function formatDate(d: Date | string | null): string {
   if (!d) return "—";
@@ -22,21 +26,59 @@ function formatDate(d: Date | string | null): string {
   });
 }
 
-export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean }) {
+const CONFIG: Record<FilterMode, {
+  csvLabel: string;
+  pdfLabel: string;
+  xlsxLabel: string;
+  csvPrefix: string;
+  pdfPrefix: string;
+  xlsxPrefix: string;
+}> = {
+  all: {
+    csvLabel: "Export CSV",
+    pdfLabel: "Export PDF",
+    xlsxLabel: "Exporter Excel",
+    csvPrefix: "color-memory-trials",
+    pdfPrefix: "color-memory-report",
+    xlsxPrefix: "experiment-data",
+  },
+  complete: {
+    csvLabel: "CSV (complets)",
+    pdfLabel: "PDF (complets)",
+    xlsxLabel: "Excel (complets)",
+    csvPrefix: "participants-complets",
+    pdfPrefix: "participants-complets",
+    xlsxPrefix: "participants-complets",
+  },
+  young: {
+    csvLabel: "CSV (≤ 30 ans)",
+    pdfLabel: "PDF (≤ 30 ans)",
+    xlsxLabel: "Excel (≤ 30 ans)",
+    csvPrefix: "participants-30ans",
+    pdfPrefix: "participants-30ans",
+    xlsxPrefix: "participants-30ans",
+  },
+};
+
+const TRIAL_FETCHERS: Record<FilterMode, () => ReturnType<typeof getAllTrials>> = {
+  all: getAllTrials,
+  complete: getCompleteTrials,
+  young: getYoungCompleteTrials,
+};
+
+const TS_FETCHERS: Record<FilterMode, () => ReturnType<typeof getTrialsWithTimestamps>> = {
+  all: getTrialsWithTimestamps,
+  complete: getCompleteTrialsWithTimestamps,
+  young: getYoungCompleteTrialsWithTimestamps,
+};
+
+export function ExportButtons({ filterMode = "all" }: { filterMode?: FilterMode; completeOnly?: boolean }) {
   const [exporting, setExporting] = useState(false);
 
-  const fetchTrials = completeOnly ? getCompleteTrials : getAllTrials;
-  const fetchTrialsWithTs = completeOnly ? getCompleteTrialsWithTimestamps : getTrialsWithTimestamps;
+  const cfg = CONFIG[filterMode];
   const dateStr = new Date().toISOString().slice(0, 10);
-  const csvFilename = completeOnly
-    ? `participants-complets-${dateStr}.csv`
-    : `color-memory-trials-${dateStr}.csv`;
-  const pdfFilename = completeOnly
-    ? `participants-complets-${dateStr}.pdf`
-    : `color-memory-report-${dateStr}.pdf`;
-  const xlsxFilename = completeOnly
-    ? `participants-complets-${dateStr}.xlsx`
-    : `experiment-data-${dateStr}.xlsx`;
+  const fetchTrials = TRIAL_FETCHERS[filterMode];
+  const fetchTrialsWithTs = TS_FETCHERS[filterMode];
 
   const handleCSV = async () => {
     setExporting(true);
@@ -66,7 +108,7 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = csvFilename;
+      a.download = `${cfg.csvPrefix}-${dateStr}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -144,7 +186,7 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
       }
 
       if (first) return;
-      doc.save(pdfFilename);
+      doc.save(`${cfg.pdfPrefix}-${dateStr}.pdf`);
     } finally {
       setExporting(false);
     }
@@ -157,7 +199,6 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
       const ExcelJS = (await import("exceljs")).default;
       const workbook = new ExcelJS.Workbook();
 
-      // --- Sheet 1: Participants ---
       const participantsSheet = workbook.addWorksheet("Participants");
       participantsSheet.columns = [
         { header: "participant_id", key: "id", width: 38 },
@@ -169,7 +210,6 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
         { header: "total_trials", key: "totalTrials", width: 12 },
       ];
 
-      // Group trials by participant to build participant rows
       const grouped = new Map<string, typeof trials>();
       for (const t of trials) {
         const existing = grouped.get(t.participantId) || [];
@@ -189,12 +229,10 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
         });
       }
 
-      // Bold header row + freeze
       const pHeaderRow = participantsSheet.getRow(1);
       pHeaderRow.font = { bold: true };
       participantsSheet.views = [{ state: "frozen", ySplit: 1 }];
 
-      // --- Sheet 2: Trials ---
       const trialsSheet = workbook.addWorksheet("Trials");
       trialsSheet.columns = [
         { header: "participant_id", key: "participantId", width: 38 },
@@ -228,12 +266,10 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
         });
       }
 
-      // Bold header row + freeze
       const tHeaderRow = trialsSheet.getRow(1);
       tHeaderRow.font = { bold: true };
       trialsSheet.views = [{ state: "frozen", ySplit: 1 }];
 
-      // Generate and download
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -241,7 +277,7 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = xlsxFilename;
+      a.download = `${cfg.xlsxPrefix}-${dateStr}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -249,20 +285,16 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
     }
   };
 
-  const csvLabel = completeOnly ? "CSV (complets)" : "Export CSV";
-  const pdfLabel = completeOnly ? "PDF (complets)" : "Export PDF";
-  const xlsxLabel = completeOnly ? "Excel (complets)" : "Exporter Excel";
-
   return (
     <div className="flex gap-2">
       <Button variant="outline" size="sm" onClick={handleCSV} disabled={exporting}>
-        {csvLabel}
+        {cfg.csvLabel}
       </Button>
       <Button variant="outline" size="sm" onClick={handlePDF} disabled={exporting}>
-        {pdfLabel}
+        {cfg.pdfLabel}
       </Button>
       <Button variant="outline" size="sm" onClick={handleExcel} disabled={exporting}>
-        {xlsxLabel}
+        {cfg.xlsxLabel}
       </Button>
     </div>
   );
