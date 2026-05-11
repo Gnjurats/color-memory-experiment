@@ -2,15 +2,23 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getAllTrials } from "@/lib/actions";
+import { getAllTrials, getCompleteTrials } from "@/lib/actions";
 
-export function ExportButtons() {
+export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean }) {
   const [exporting, setExporting] = useState(false);
+
+  const fetchTrials = completeOnly ? getCompleteTrials : getAllTrials;
+  const csvFilename = completeOnly
+    ? `participants-complets-${new Date().toISOString().slice(0, 10)}.csv`
+    : `color-memory-trials-${new Date().toISOString().slice(0, 10)}.csv`;
+  const pdfFilename = completeOnly
+    ? `participants-complets-${new Date().toISOString().slice(0, 10)}.pdf`
+    : `color-memory-report-${new Date().toISOString().slice(0, 10)}.pdf`;
 
   const handleCSV = async () => {
     setExporting(true);
     try {
-      const trials = await getAllTrials();
+      const trials = await fetchTrials();
       const Papa = (await import("papaparse")).default;
 
       const csv = Papa.unparse(
@@ -35,7 +43,7 @@ export function ExportButtons() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `color-memory-trials-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = csvFilename;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -46,7 +54,7 @@ export function ExportButtons() {
   const handlePDF = async () => {
     setExporting(true);
     try {
-      const trials = await getAllTrials();
+      const trials = await fetchTrials();
       const jsPDFModule = await import("jspdf");
       const jsPDF = jsPDFModule.default;
       const autoTable = (await import("jspdf-autotable")).default;
@@ -113,21 +121,27 @@ export function ExportButtons() {
         });
       }
 
-      doc.save(
-        `color-memory-report-${new Date().toISOString().slice(0, 10)}.pdf`
-      );
+      if (first) {
+        // No data — don't save empty PDF
+        return;
+      }
+
+      doc.save(pdfFilename);
     } finally {
       setExporting(false);
     }
   };
 
+  const csvLabel = completeOnly ? "CSV (complets)" : "Export CSV";
+  const pdfLabel = completeOnly ? "PDF (complets)" : "Export PDF";
+
   return (
     <div className="flex gap-2">
       <Button variant="outline" size="sm" onClick={handleCSV} disabled={exporting}>
-        Export CSV
+        {csvLabel}
       </Button>
       <Button variant="outline" size="sm" onClick={handlePDF} disabled={exporting}>
-        Export PDF
+        {pdfLabel}
       </Button>
     </div>
   );

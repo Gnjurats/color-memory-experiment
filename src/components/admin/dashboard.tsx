@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getParticipants, getAllTrials, getAggregateStats } from "@/lib/actions";
+import { getParticipants, getAggregateStats, getCompleteParticipantIds } from "@/lib/actions";
 import { logout } from "@/lib/auth";
 import { StatsChart } from "./stats-chart";
 import { ExportButtons } from "./export-buttons";
@@ -22,17 +22,80 @@ import Link from "next/link";
 
 type Participant = Awaited<ReturnType<typeof getParticipants>>[number];
 type Stats = Awaited<ReturnType<typeof getAggregateStats>>;
+type Tab = "participants" | "complete" | "stats";
+
+function ParticipantsTable({ participants, emptyMessage }: { participants: Participant[]; emptyMessage: string }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Pseudo</TableHead>
+          <TableHead>Âge</TableHead>
+          <TableHead>Genre</TableHead>
+          <TableHead>Début</TableHead>
+          <TableHead>Fin</TableHead>
+          <TableHead>Progression</TableHead>
+          <TableHead>Détails</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {participants.map((p) => (
+          <TableRow key={p.id}>
+            <TableCell>{p.pseudo || "—"}</TableCell>
+            <TableCell className="text-sm">{p.age ?? "—"}</TableCell>
+            <TableCell className="text-sm">{p.gender || "—"}</TableCell>
+            <TableCell className="text-sm">
+              {new Date(p.startedAt).toLocaleString("fr-FR")}
+            </TableCell>
+            <TableCell className="text-sm">
+              {p.completedAt
+                ? new Date(p.completedAt).toLocaleString("fr-FR")
+                : "—"}
+            </TableCell>
+            <TableCell>
+              <Badge
+                variant={
+                  p.trialCount >= 48 ? "default" : "secondary"
+                }
+              >
+                {p.trialCount} / 48
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Link href={`/admin/participant/${p.id}`}>
+                <Button variant="outline" size="sm">
+                  Voir
+                </Button>
+              </Link>
+            </TableCell>
+          </TableRow>
+        ))}
+        {participants.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center text-muted-foreground">
+              {emptyMessage}
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+}
 
 export function AdminDashboard() {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [completeIds, setCompleteIds] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState<Stats>([]);
-  const [tab, setTab] = useState<"participants" | "stats">("participants");
+  const [tab, setTab] = useState<Tab>("participants");
   const router = useRouter();
 
   useEffect(() => {
     getParticipants().then(setParticipants);
+    getCompleteParticipantIds().then(setCompleteIds);
     getAggregateStats().then(setStats);
   }, []);
+
+  const completeParticipants = participants.filter((p) => completeIds.has(p.id));
 
   const handleLogout = async () => {
     await logout();
@@ -62,6 +125,12 @@ export function AdminDashboard() {
             Participants ({participants.length})
           </Button>
           <Button
+            variant={tab === "complete" ? "default" : "outline"}
+            onClick={() => setTab("complete")}
+          >
+            Participants complets ({completeParticipants.length})
+          </Button>
+          <Button
             variant={tab === "stats" ? "default" : "outline"}
             onClick={() => setTab("stats")}
           >
@@ -77,59 +146,29 @@ export function AdminDashboard() {
               <CardTitle>Participants</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Pseudo</TableHead>
-                    <TableHead>Âge</TableHead>
-                    <TableHead>Genre</TableHead>
-                    <TableHead>Début</TableHead>
-                    <TableHead>Fin</TableHead>
-                    <TableHead>Progression</TableHead>
-                    <TableHead>Détails</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {participants.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>{p.pseudo || "—"}</TableCell>
-                      <TableCell className="text-sm">{p.age ?? "—"}</TableCell>
-                      <TableCell className="text-sm">{p.gender || "—"}</TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(p.startedAt).toLocaleString("fr-FR")}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {p.completedAt
-                          ? new Date(p.completedAt).toLocaleString("fr-FR")
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            p.trialCount >= 48 ? "default" : "secondary"
-                          }
-                        >
-                          {p.trialCount} / 48
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/admin/participant/${p.id}`}>
-                          <Button variant="outline" size="sm">
-                            Voir
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {participants.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground">
-                        Aucun participant pour le moment.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+              <ParticipantsTable
+                participants={participants}
+                emptyMessage="Aucun participant pour le moment."
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {tab === "complete" && (
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>
+                  {completeParticipants.length} participant{completeParticipants.length !== 1 ? "s" : ""} complet{completeParticipants.length !== 1 ? "s" : ""}
+                </CardTitle>
+                <ExportButtons completeOnly />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ParticipantsTable
+                participants={completeParticipants}
+                emptyMessage="Aucun participant complet pour le moment."
+              />
             </CardContent>
           </Card>
         )}

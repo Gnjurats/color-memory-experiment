@@ -141,6 +141,29 @@ export async function getAllTrials() {
   return result;
 }
 
+export async function getCompleteParticipantIds() {
+  // Return IDs of participants with exactly 48 trials AND completed_at not null
+  const result = await db
+    .select({
+      id: participants.id,
+    })
+    .from(participants)
+    .leftJoin(trials, eq(participants.id, trials.participantId))
+    .where(sql`${participants.completedAt} IS NOT NULL`)
+    .groupBy(participants.id)
+    .having(sql`COUNT(${trials.id}) = 48`);
+
+  return new Set(result.map((r) => r.id));
+}
+
+export async function getCompleteTrials() {
+  const completeIds = await getCompleteParticipantIds();
+  if (completeIds.size === 0) return [];
+
+  const allTrials = await getAllTrials();
+  return allTrials.filter((t) => completeIds.has(t.participantId));
+}
+
 export async function getAggregateStats() {
   // Get all trials for aggregate analysis
   const allTrials = await db.select().from(trials);
