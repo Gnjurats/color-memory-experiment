@@ -2,18 +2,41 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getAllTrials, getCompleteTrials } from "@/lib/actions";
+import {
+  getAllTrials,
+  getCompleteTrials,
+  getTrialsWithTimestamps,
+  getCompleteTrialsWithTimestamps,
+} from "@/lib/actions";
+
+function formatDate(d: Date | string | null): string {
+  if (!d) return "—";
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean }) {
   const [exporting, setExporting] = useState(false);
 
   const fetchTrials = completeOnly ? getCompleteTrials : getAllTrials;
+  const fetchTrialsWithTs = completeOnly ? getCompleteTrialsWithTimestamps : getTrialsWithTimestamps;
+  const dateStr = new Date().toISOString().slice(0, 10);
   const csvFilename = completeOnly
-    ? `participants-complets-${new Date().toISOString().slice(0, 10)}.csv`
-    : `color-memory-trials-${new Date().toISOString().slice(0, 10)}.csv`;
+    ? `participants-complets-${dateStr}.csv`
+    : `color-memory-trials-${dateStr}.csv`;
   const pdfFilename = completeOnly
-    ? `participants-complets-${new Date().toISOString().slice(0, 10)}.pdf`
-    : `color-memory-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+    ? `participants-complets-${dateStr}.pdf`
+    : `color-memory-report-${dateStr}.pdf`;
+  const xlsxFilename = completeOnly
+    ? `participants-complets-${dateStr}.xlsx`
+    : `experiment-data-${dateStr}.xlsx`;
 
   const handleCSV = async () => {
     setExporting(true);
@@ -59,7 +82,6 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
       const jsPDF = jsPDFModule.default;
       const autoTable = (await import("jspdf-autotable")).default;
 
-      // Group by participant
       const grouped = new Map<string, typeof trials>();
       for (const t of trials) {
         const existing = grouped.get(t.participantId) || [];
@@ -121,12 +143,107 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
         });
       }
 
-      if (first) {
-        // No data — don't save empty PDF
-        return;
+      if (first) return;
+      doc.save(pdfFilename);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExcel = async () => {
+    setExporting(true);
+    try {
+      const trials = await fetchTrialsWithTs();
+      const ExcelJS = (await import("exceljs")).default;
+      const workbook = new ExcelJS.Workbook();
+
+      // --- Sheet 1: Participants ---
+      const participantsSheet = workbook.addWorksheet("Participants");
+      participantsSheet.columns = [
+        { header: "participant_id", key: "id", width: 38 },
+        { header: "pseudo", key: "pseudo", width: 20 },
+        { header: "age", key: "age", width: 8 },
+        { header: "gender", key: "gender", width: 12 },
+        { header: "started_at", key: "startedAt", width: 22 },
+        { header: "completed_at", key: "completedAt", width: 22 },
+        { header: "total_trials", key: "totalTrials", width: 12 },
+      ];
+
+      // Group trials by participant to build participant rows
+      const grouped = new Map<string, typeof trials>();
+      for (const t of trials) {
+        const existing = grouped.get(t.participantId) || [];
+        existing.push(t);
+        grouped.set(t.participantId, existing);
       }
 
-      doc.save(pdfFilename);
+      for (const [pid, pTrials] of grouped) {
+        participantsSheet.addRow({
+          id: pid,
+          pseudo: pTrials[0]?.pseudo || "",
+          age: pTrials[0]?.age ?? "",
+          gender: pTrials[0]?.gender || "",
+          startedAt: formatDate(pTrials[0]?.startedAt),
+          completedAt: formatDate(pTrials[0]?.completedAt),
+          totalTrials: pTrials.length,
+        });
+      }
+
+      // Bold header row + freeze
+      const pHeaderRow = participantsSheet.getRow(1);
+      pHeaderRow.font = { bold: true };
+      participantsSheet.views = [{ state: "frozen", ySplit: 1 }];
+
+      // --- Sheet 2: Trials ---
+      const trialsSheet = workbook.addWorksheet("Trials");
+      trialsSheet.columns = [
+        { header: "participant_id", key: "participantId", width: 38 },
+        { header: "pseudo", key: "pseudo", width: 20 },
+        { header: "test_order", key: "testOrder", width: 12 },
+        { header: "category", key: "category", width: 22 },
+        { header: "correct_word", key: "word", width: 18 },
+        { header: "typed_answer", key: "typedAnswer", width: 18 },
+        { header: "word_correct", key: "wordCorrect", width: 14 },
+        { header: "original_color", key: "originalColor", width: 16 },
+        { header: "selected_color", key: "selectedColor", width: 16 },
+        { header: "color_correct", key: "colorCorrect", width: 14 },
+        { header: "confidence", key: "confidence", width: 12 },
+        { header: "created_at", key: "createdAt", width: 22 },
+      ];
+
+      for (const t of trials) {
+        trialsSheet.addRow({
+          participantId: t.participantId,
+          pseudo: t.pseudo || "",
+          testOrder: t.testOrder + 1,
+          category: t.category,
+          word: t.word,
+          typedAnswer: t.typedAnswer,
+          wordCorrect: t.wordCorrect ? "Oui" : "Non",
+          originalColor: t.originalColor,
+          selectedColor: t.selectedColor,
+          colorCorrect: t.colorCorrect ? "Oui" : "Non",
+          confidence: t.confidence,
+          createdAt: formatDate(t.trialCreatedAt),
+        });
+      }
+
+      // Bold header row + freeze
+      const tHeaderRow = trialsSheet.getRow(1);
+      tHeaderRow.font = { bold: true };
+      trialsSheet.views = [{ state: "frozen", ySplit: 1 }];
+
+      // Generate and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = xlsxFilename;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
       setExporting(false);
     }
@@ -134,6 +251,7 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
 
   const csvLabel = completeOnly ? "CSV (complets)" : "Export CSV";
   const pdfLabel = completeOnly ? "PDF (complets)" : "Export PDF";
+  const xlsxLabel = completeOnly ? "Excel (complets)" : "Exporter Excel";
 
   return (
     <div className="flex gap-2">
@@ -142,6 +260,9 @@ export function ExportButtons({ completeOnly = false }: { completeOnly?: boolean
       </Button>
       <Button variant="outline" size="sm" onClick={handlePDF} disabled={exporting}>
         {pdfLabel}
+      </Button>
+      <Button variant="outline" size="sm" onClick={handleExcel} disabled={exporting}>
+        {xlsxLabel}
       </Button>
     </div>
   );

@@ -164,6 +164,41 @@ export async function getCompleteTrials() {
   return allTrials.filter((t) => completeIds.has(t.participantId));
 }
 
+export async function getTrialsWithTimestamps() {
+  const result = await db
+    .select({
+      trialId: trials.id,
+      participantId: trials.participantId,
+      pseudo: participants.pseudo,
+      age: participants.age,
+      gender: participants.gender,
+      startedAt: participants.startedAt,
+      completedAt: participants.completedAt,
+      word: trials.word,
+      category: trials.category,
+      originalColor: trials.originalColor,
+      typedAnswer: trials.typedAnswer,
+      wordCorrect: trials.wordCorrect,
+      selectedColor: trials.selectedColor,
+      colorCorrect: trials.colorCorrect,
+      confidence: trials.confidence,
+      testOrder: trials.testOrder,
+      trialCreatedAt: trials.createdAt,
+    })
+    .from(trials)
+    .innerJoin(participants, eq(trials.participantId, participants.id))
+    .orderBy(participants.startedAt, trials.testOrder);
+
+  return result;
+}
+
+export async function getCompleteTrialsWithTimestamps() {
+  const completeIds = await getCompleteParticipantIds();
+  if (completeIds.size === 0) return [];
+  const all = await getTrialsWithTimestamps();
+  return all.filter((t) => completeIds.has(t.participantId));
+}
+
 export async function getAggregateStats() {
   // Get all trials for aggregate analysis
   const allTrials = await db.select().from(trials);
